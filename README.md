@@ -1,7 +1,7 @@
-# Tauri + Dioxus
+# Requestor
 
-This template should help get you started developing with Tauri and Dioxus.
+A lighweight cross platform app for sending requests and checking responses.
 
-## Recommended IDE Setup
+Currently quite basic, mostly made out of annoyance with other similar programs either having too much bloat or locking things behind accounts and subscriptions.
 
-[VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) + [Dioxus](https://marketplace.visualstudio.com/items?itemName=DioxusLabs.dioxus).
+I intend to add more functionality with time.

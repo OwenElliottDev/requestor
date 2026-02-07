@@ -215,3 +215,45 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* ---------- History ---------- */
+
+.history-list-container {
+  max-height: 350px;
+  overflow: scroll;
+}
+
+.history-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.history-item:hover {
+  background: var(--panel);
+  border-color: var(--accent);
+}
+
+.history-item:active {
+  transform: translateY(1px);
+}
+
+.history-item strong {
+  color: var(--accent-strong);
+}
+
+.history-item .response-time {
+  color: var(--muted);
+  font-size: 12px;
+  margin-left: 4px;
+}
