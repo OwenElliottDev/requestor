@@ -1,0 +1,217 @@
+/* ---------- Theme variables ---------- */
+:root {
+  --bg: #0e1117;
+  --panel: #161b22;
+  --panel-2: #1f2633;
+  --border: #2d3748;
+  --text: #e6edf3;
+  --muted: #9aa4b2;
+  --accent: #4cc2ff;
+  --accent-strong: #1f9cf0;
+  --danger: #ff6b6b;
+
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- Layout ---------- */
+
+body {
+  margin: 0;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+h1 {
+  margin-bottom: 24px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* ---------- Request line ---------- */
+
+.request-line {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.request-line select {
+  width: 110px;
+}
+
+.request-line input {
+  flex: 1;
+}
+
+/* ---------- Panels ---------- */
+
+section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+section h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Inputs ---------- */
+
+input,
+select,
+textarea,
+button {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+textarea {
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background-color: var(--panel-2);
+  color: var(--text);
+
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+}
+
+select:hover {
+  border-color: var(--accent);
+}
+
+select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* ---------- Buttons ---------- */
+
+button {
+  cursor: pointer;
+  background: var(--accent-strong);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 500;
+}
+
+button:hover {
+  background: var(--accent);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+/* Secondary buttons (like ✕) */
+.kv-row button {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  padding: 0 6px;
+}
+
+.kv-row button:hover {
+  color: var(--danger);
+}
+
+/* ---------- Key/Value editor ---------- */
+
+.kv-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kv-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+}
+
+/* ---------- Response ---------- */
+
+.response pre {
+  background: #0b0f14;
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.response strong {
+  color: var(--accent);
+}
+
+.status-ok {
+  color: rgb(0, 233, 0);
+}
+
+.status-error {
+  color: red;
+}
+
+/* ---------- Subtle focus ---------- */
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent);
+}
+
+/* ---------- Links ---------- */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
