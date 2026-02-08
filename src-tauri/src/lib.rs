@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use once_cell::sync::Lazy;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use rusqlite::{
     params,
@@ -8,18 +9,21 @@ use rusqlite::{
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 use syntect::easy::HighlightLines;
-use syntect::highlighting::ThemeSet;
 use syntect::html::{
     start_highlighted_html_snippet, styled_line_to_highlighted_html, IncludeBackground,
 };
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
-use tauri::Manager;
-
-use once_cell::sync::Lazy;
+use vscode_theme_syntect::parse_vscode_theme;
+// use tauri::Manager;
 
 static SYNTAX_SET: Lazy<SyntaxSet> = Lazy::new(|| SyntaxSet::load_defaults_newlines());
-static THEME_SET: Lazy<ThemeSet> = Lazy::new(|| ThemeSet::load_defaults());
+static THEME: Lazy<syntect::highlighting::Theme> = Lazy::new(|| {
+    let vscode = parse_vscode_theme(include_str!("../highlight_themes/dark_plus.json"))
+        .expect("Failed to parse VS Code theme");
+
+    syntect::highlighting::Theme::try_from(vscode).expect("Failed to convert to syntect Theme")
+});
 
 fn rfc3339_now() -> String {
     let now = SystemTime::now();
@@ -254,12 +258,10 @@ fn get_requests() -> Result<Vec<CompletedRequestArgs>, String> {
 
 #[tauri::command]
 fn highlight_code(code: String, lang: String) -> Result<String, String> {
-    let theme = &THEME_SET.themes["Solarized (dark)"];
-    log::info!("{}", lang);
+    let theme = &THEME;
     let syntax = SYNTAX_SET.find_syntax_by_extension(&lang).unwrap();
-    let mut h = HighlightLines::new(syntax, theme);
-    log::info!("{}", code);
-    let (mut html, _bg) = start_highlighted_html_snippet(theme); // includes <pre style=…>\n
+    let mut h = HighlightLines::new(syntax, &theme);
+    let (mut html, _bg) = start_highlighted_html_snippet(&theme);
 
     for line in LinesWithEndings::from(&code) {
         let regions = h
@@ -269,26 +271,24 @@ fn highlight_code(code: String, lang: String) -> Result<String, String> {
             .map_err(|e| e.to_string())?;
         html.push_str(&line_html);
     }
-
     html.push_str("</pre>");
-    log::info!("{}", html);
     Ok(html)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .setup(|app| {
-            #[cfg(debug_assertions)]
-            {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
-            }
-            Ok(())
-        })
+        // .setup(|app| {
+        //     #[cfg(debug_assertions)]
+        //     {
+        //         let window = app.get_webview_window("main").unwrap();
+        //         window.open_devtools();
+        //     }
+        //     Ok(())
+        // })
         .plugin(
             tauri_plugin_log::Builder::new()
-                .level(tauri_plugin_log::log::LevelFilter::Debug)
+                .level(tauri_plugin_log::log::LevelFilter::Info)
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())

@@ -10,7 +10,6 @@ use crate::models::{
     CompletedRequest, CompletedRequestArgs, RequestState, ResponseState, SendRequestArgs,
 };
 use crate::response_code_reference::http_status_meaning;
-use web_sys::console;
 static CSS: Asset = asset!("/assets/styles.css");
 
 #[wasm_bindgen]
@@ -140,11 +139,9 @@ pub fn App() -> Element {
     });
 
     use_effect(move || {
-        // read the signals here synchronously
         let maybe_response = response.read().clone();
         let language = lang.clone();
 
-        // then do async work using those captured values
         wasm_bindgen_futures::spawn_local(async move {
             if let Some(resp) = maybe_response.as_ref() {
                 web_sys::console::log_1(&"Effect triggered: calling highlight".into());
