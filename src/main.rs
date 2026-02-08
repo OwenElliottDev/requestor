@@ -1,4 +1,7 @@
 mod app;
+mod components;
+mod highlight;
+mod models;
 mod response_code_reference;
 
 use app::App;
