@@ -160,6 +160,34 @@ button:active {
   color: var(--danger);
 }
 
+/* ---------- Status help button ---------- */
+.status-help-button {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.status-help-button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(76, 194, 255, 0.1); /* subtle hover glow */
+}
+
+.status-help-button:active {
+  transform: scale(0.95);
+}
+
 /* ---------- Key/Value editor ---------- */
 
 .kv-editor {

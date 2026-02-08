@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::prelude::*;
 
+use crate::response_code_reference::http_status_meaning;
+
 static CSS: Asset = asset!("/assets/styles.css");
 
 #[wasm_bindgen]
@@ -115,6 +117,7 @@ pub fn App() -> Element {
     let mut request = use_signal(RequestState::default);
     let response = use_signal(|| None::<ResponseState>);
     let mut request_history = use_signal(Vec::<CompletedRequest>::new);
+    let mut show_status_help = use_signal(|| false);
 
     let send_request = {
         let request_signal = request.clone();
@@ -211,6 +214,8 @@ pub fn App() -> Element {
         });
     });
 
+    let method = request.read().method.clone();
+
     rsx! {
         link { rel: "stylesheet", href: CSS }
 
@@ -243,17 +248,21 @@ pub fn App() -> Element {
                 {key_value_editor(request, |r| &mut r.headers)}
             }
 
-            section {
-                h3 { "Query Params" }
-                {key_value_editor(request, |r| &mut r.query_params)}
+            if matches!(method.as_str(), "GET" | "DELETE") {
+                section {
+                    h3 { "Query Params" }
+                    {key_value_editor(request, |r| &mut r.query_params)}
+                }
             }
 
-            section {
-                h3 { "Body" }
-                textarea {
-                    placeholder: "Raw request body...",
-                    value: "{request.read().body}",
-                    oninput: move |e| request.with_mut(|r| r.body = e.value()),
+            if matches!(method.as_str(), "POST" | "PUT" | "PATCH") {
+                section {
+                    h3 { "Body" }
+                    textarea {
+                        placeholder: "Raw request body...",
+                        value: "{request.read().body}",
+                        oninput: move |e| request.with_mut(|r| r.body = e.value()),
+                    }
                 }
             }
 
@@ -266,8 +275,17 @@ pub fn App() -> Element {
                             p { class: if resp.status >= 200 && resp.status < 300 { "status-ok" } else { "status-error" },
                                 strong { "Status: " }
                                 "{resp.status}"
+                                button {
+                                    class: "status-help-button",
+                                    onclick: move |_| {
+                                        show_status_help.set(!show_status_help());
+                                    },
+                                    "?"
+                                }
                             }
-
+                            if show_status_help() {
+                                p { class: "status-meaning", "{http_status_meaning(resp.status)}" }
+                            }
                             p {
                                 strong { "Processing time (ms): " }
                                 "{resp.response_time}"

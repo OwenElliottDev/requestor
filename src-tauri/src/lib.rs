@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use rusqlite::{
     params,
@@ -5,6 +6,13 @@ use rusqlite::{
     Connection, Result,
 };
 use serde::{Deserialize, Serialize};
+use std::time::SystemTime;
+
+fn rfc3339_now() -> String {
+    let now = SystemTime::now();
+    let now: DateTime<Utc> = now.into();
+    now.to_rfc3339()
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "UPPERCASE")]
@@ -174,13 +182,14 @@ fn save_request(args: CompletedRequestArgs) -> Result<(), String> {
             body TEXT,
             status INTEGER,
             response_body TEXT,
-            response_time REAL
+            response_time REAL,
+            created_at TEXT
         )",
         [],
     )
     .map_err(|e| e.to_string())?;
     conn.execute(
-        "INSERT INTO requests (method, url, query_params, headers, body, status, response_body, response_time) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        "INSERT INTO requests (method, url, query_params, headers, body, status, response_body, response_time, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         params![
             args.req.method.as_str(),
             args.req.url,
@@ -190,6 +199,7 @@ fn save_request(args: CompletedRequestArgs) -> Result<(), String> {
             args.resp.status,
             args.resp.body,
             args.resp.response_time,
+            rfc3339_now()
         ],
     ).map_err(|e| e.to_string())?;
     Ok(())
