@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use once_cell::sync::Lazy;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use rusqlite::{
     params,
@@ -7,6 +8,22 @@ use rusqlite::{
 };
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
+use syntect::easy::HighlightLines;
+use syntect::html::{
+    start_highlighted_html_snippet, styled_line_to_highlighted_html, IncludeBackground,
+};
+use syntect::parsing::SyntaxSet;
+use syntect::util::LinesWithEndings;
+use vscode_theme_syntect::parse_vscode_theme;
+// use tauri::Manager;
+
+static SYNTAX_SET: Lazy<SyntaxSet> = Lazy::new(|| SyntaxSet::load_defaults_newlines());
+static THEME: Lazy<syntect::highlighting::Theme> = Lazy::new(|| {
+    let vscode = parse_vscode_theme(include_str!("../highlight_themes/dark_plus.json"))
+        .expect("Failed to parse VS Code theme");
+
+    syntect::highlighting::Theme::try_from(vscode).expect("Failed to convert to syntect Theme")
+});
 
 fn rfc3339_now() -> String {
     let now = SystemTime::now();
@@ -207,6 +224,7 @@ fn save_request(args: CompletedRequestArgs) -> Result<(), String> {
 
 #[tauri::command]
 fn get_requests() -> Result<Vec<CompletedRequestArgs>, String> {
+    log::debug!("Getting requests!");
     let conn = Connection::open("requests.db").map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT method, url, query_params, headers, body, status, response_body, response_time FROM requests")
@@ -238,9 +256,36 @@ fn get_requests() -> Result<Vec<CompletedRequestArgs>, String> {
     Ok(requests)
 }
 
+#[tauri::command]
+fn highlight_code(code: String, lang: String) -> Result<String, String> {
+    let theme = &THEME;
+    let syntax = SYNTAX_SET.find_syntax_by_extension(&lang).unwrap();
+    let mut h = HighlightLines::new(syntax, &theme);
+    let (mut html, _bg) = start_highlighted_html_snippet(&theme);
+
+    for line in LinesWithEndings::from(&code) {
+        let regions = h
+            .highlight_line(line, &SYNTAX_SET)
+            .map_err(|e| e.to_string())?;
+        let line_html = styled_line_to_highlighted_html(&regions[..], IncludeBackground::No)
+            .map_err(|e| e.to_string())?;
+        html.push_str(&line_html);
+    }
+    html.push_str("</pre>");
+    Ok(html)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // .setup(|app| {
+        //     #[cfg(debug_assertions)]
+        //     {
+        //         let window = app.get_webview_window("main").unwrap();
+        //         window.open_devtools();
+        //     }
+        //     Ok(())
+        // })
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(tauri_plugin_log::log::LevelFilter::Info)
@@ -250,7 +295,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             send_request,
             save_request,
-            get_requests
+            get_requests,
+            highlight_code
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

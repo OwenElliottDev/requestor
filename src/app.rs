@@ -1,116 +1,21 @@
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
-use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::prelude::*;
 
+use crate::components::key_value_editor::key_value_editor;
+use crate::highlight::highlight_to_html;
+use crate::models::{
+    CompletedRequest, CompletedRequestArgs, RequestState, ResponseState, SendRequestArgs,
+};
 use crate::response_code_reference::http_status_meaning;
-
 static CSS: Asset = asset!("/assets/styles.css");
 
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "core"], catch)]
-    async fn invoke(cmd: &str, args: JsValue) -> Result<JsValue, JsValue>;
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-struct KeyValue {
-    key: String,
-    value: String,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-struct RequestState {
-    method: String,
-    url: String,
-    query_params: Vec<KeyValue>,
-    headers: Vec<KeyValue>,
-    body: String,
-}
-
-#[derive(Serialize, Clone)]
-struct SendRequestArgs {
-    args: RequestState,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct CompletedRequest {
-    req: RequestState,
-    resp: ResponseState,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct CompletedRequestArgs {
-    args: CompletedRequest,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-struct ResponseState {
-    status: u16,
-    body: String,
-    response_time: f64,
-}
-
-fn key_value_editor(
-    mut request: Signal<RequestState>,
-    field: fn(&mut RequestState) -> &mut Vec<KeyValue>,
-) -> Element {
-    let items = {
-        let snapshot = request.read();
-        field(&mut snapshot.clone()).clone()
-    };
-
-    rsx! {
-        div { class: "kv-editor",
-            for (idx , kv) in items.iter().enumerate() {
-                div { class: "kv-row",
-                    input {
-                        placeholder: "Key",
-                        value: "{kv.key}",
-                        oninput: move |e| {
-                            request
-                                .with_mut(|r| {
-                                    field(r)[idx].key = e.value();
-                                });
-                        },
-                    }
-
-                    input {
-                        placeholder: "Value",
-                        value: "{kv.value}",
-                        oninput: move |e| {
-                            request
-                                .with_mut(|r| {
-                                    field(r)[idx].value = e.value();
-                                });
-                        },
-                    }
-
-                    button {
-                        onclick: move |_| {
-                            request
-                                .with_mut(|r| {
-                                    field(r).remove(idx);
-                                });
-                        },
-                        "✕"
-                    }
-                }
-            }
-
-            button {
-                onclick: move |_| {
-                    request
-                        .with_mut(|r| {
-                            field(r).push(KeyValue::default());
-                        });
-                },
-                "+ Add"
-            }
-        }
-    }
+    pub async fn invoke(cmd: &str, args: JsValue) -> Result<JsValue, JsValue>;
 }
 
 pub fn App() -> Element {
@@ -118,6 +23,9 @@ pub fn App() -> Element {
     let response = use_signal(|| None::<ResponseState>);
     let mut request_history = use_signal(Vec::<CompletedRequest>::new);
     let mut show_status_help = use_signal(|| false);
+
+    let mut lang = use_signal(|| String::new());
+    let mut highlighted_html = use_signal(|| String::new());
 
     let send_request = {
         let request_signal = request.clone();
@@ -214,6 +122,41 @@ pub fn App() -> Element {
         });
     });
 
+    use_effect(move || {
+        if let Some(resp) = response.read().as_ref() {
+            let trimmed = resp.body.trim_start();
+
+            let new_lang = if trimmed.to_uppercase().starts_with("<!DOCTYPE HTML>") {
+                "html"
+            } else if trimmed.starts_with('{') || trimmed.starts_with('[') {
+                "json"
+            } else {
+                "txt"
+            };
+
+            lang.set(new_lang.to_string());
+        }
+    });
+
+    use_effect(move || {
+        let maybe_response = response.read().clone();
+        let language = lang.clone();
+
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Some(resp) = maybe_response.as_ref() {
+                web_sys::console::log_1(&"Effect triggered: calling highlight".into());
+
+                match highlight_to_html(&resp.body, &language()).await {
+                    Ok(html) => highlighted_html.set(html),
+                    Err(err) => {
+                        web_sys::console::error_1(&format!("highlight error: {:?}", err).into());
+                        highlighted_html.set(resp.body.clone());
+                    }
+                }
+            }
+        });
+    });
+
     let method = request.read().method.clone();
 
     rsx! {
@@ -291,7 +234,8 @@ pub fn App() -> Element {
                                 "{resp.response_time}"
                             }
 
-                            pre { "{resp.body}" }
+                            // pre { "{resp.body}" }
+                            div { dangerous_inner_html: "{highlighted_html}" }
                         }
                     } else {
                         rsx! {}
